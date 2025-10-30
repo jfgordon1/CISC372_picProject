@@ -3,7 +3,6 @@
 #include <time.h>
 #include <string.h>
 #include "image.h"
-#include <pthread.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -11,13 +10,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-typedef struct {
-    Image* srcImage;
-    Image* destImage;
-    Matrix algorithm;
-    int startRow;
-    int endRow;
-} ThreadData;
 //An array of kernel matrices to be used for image convolution.  
 //The indexes of these match the enumeration from the header file. ie. algorithms[BLUR] returns the kernel corresponding to a box blur.
 Matrix algorithms[]={
@@ -64,20 +56,16 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
 //            destImage: A pointer to a  pre-allocated (including space for the pixel array) structure to receive the convoluted image.  It should be the same size as srcImage
 //            algorithm: The kernel matrix to use for the convolution
 //Returns: Nothing
-void* convolute(void *arg){
-    ThreadData* data = (ThreadData*)arg;
-    Image* srcImage=data->srcImage;
-    Image* destImage=data->destImage;
+void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
     int row,pix,bit,span;
     span=srcImage->bpp*srcImage->bpp;
-    for (row=data->startRow;row<data->endRow;row++){
+    for (row=0;row<srcImage->height;row++){
         for (pix=0;pix<srcImage->width;pix++){
             for (bit=0;bit<srcImage->bpp;bit++){
-                destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,data->algorithm);
+                destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,algorithm);
             }
         }
     }
-    return NULL;
 }
 
 //Usage: Prints usage information for the program
@@ -123,31 +111,7 @@ int main(int argc,char** argv){
     destImage.height=srcImage.height;
     destImage.width=srcImage.width;
     destImage.data=malloc(sizeof(uint8_t)*destImage.width*destImage.bpp*destImage.height);
-
-    int thread_count = 5;
-    
-    long thread;
-    pthread_t* threads;
-    threads = (pthread_t*)malloc(thread_count*sizeof(pthread_t));
-    for (thread=0;thread<thread_count;thread++){
-        ThreadData* data = malloc(sizeof(ThreadData));
-        data->srcImage=&srcImage;
-        data->destImage=&destImage;
-        memcpy(data->algorithm, algorithms[type], sizeof(Matrix));
-        data->startRow=(srcImage.height/thread_count)*thread;
-        if (thread==thread_count-1){
-            data->endRow=srcImage.height;
-        } else {
-            data->endRow=(srcImage.height/thread_count)*(thread+1);
-        }
-        pthread_create(&threads[thread],NULL, &convolute,(void*)data);
-    }
-
-    for (thread=0;thread<thread_count;thread++){
-        pthread_join(threads[thread],NULL);
-    }
-    free(threads);
-    
+    convolute(&srcImage,&destImage,algorithms[type]);
     stbi_write_png("output.png",destImage.width,destImage.height,destImage.bpp,destImage.data,destImage.bpp*destImage.width);
     stbi_image_free(srcImage.data);
     
