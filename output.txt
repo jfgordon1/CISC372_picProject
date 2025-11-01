@@ -1,0 +1,7 @@
+Script started on Fri Oct 31 22:25:36 2025
+^[]0;jfgordon@r1n06.darwin:~/CISC372_picProject^G^[[?1034h[jfgordon@r1n06 CISC372_picProject]$ ./image jpg1.^H ^H^H ^H^$
+Took 7 seconds
+^[]0;jfgordon@r1n06.darwin:~/CISC372_picProject^G[jfgordon@r1n06 CISC372_picProject]$ ./imageMP pic1.jpg edge
+Took 6 seconds
+^[]0;jfgordon@r1n06.darwin:~/CISC372_picProject^G[jfgordon@r1n06 CISC372_picProject]$ exit
+exit
